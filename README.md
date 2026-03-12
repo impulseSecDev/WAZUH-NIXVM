@@ -30,11 +30,11 @@ Wazuh Manager runs as a Docker container declared via `virtualisation.oci-contai
 
 | Agent | Host | Connection |
 |---|---|---|
-| Daily Driver | NixOS workstation | Tailscale |
-| ELK VM | NixOS ELK VM | Tailscale |
-| Vaultwarden VM | NixOS Vaultwarden VM | Tailscale |
+| Daily Driver | NixOS workstation | WireGuard wg0 |
+| ELK VM | NixOS ELK VM | WireGuard wg0 |
+| Vaultwarden VM | NixOS Vaultwarden VM | WireGuard wg0 |
 | VPS | Ubuntu VPS | WireGuard wg0 |
-| Laptop | NixOS laptop | Tailscale |
+| Laptop | NixOS laptop | WireGuard wg0 |
 
 ---
 
