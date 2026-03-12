@@ -48,7 +48,7 @@ Wazuh Manager runs as a Docker container declared via `virtualisation.oci-contai
 | 1515 | TCP | Agent enrollment |
 | 55000 | TCP | Wazuh API |
 
-Ports 1514, 1515, and 55000 are open on the WireGuard interface for the VPS agent. All other agents connect over Tailscale which is trusted by the NixOS firewall without explicit rules.
+Ports 1514, 1515, and 55000 are open on the WireGuard interface. All agents connect over WireGuard wg0 — Tailscale is used exclusively for admin and SSH access.
 
 ### WireGuard Tunnel
 
