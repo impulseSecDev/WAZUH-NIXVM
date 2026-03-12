@@ -1,19 +1,16 @@
-# WAZUH-NIXVM
+# Wazuh VM
 
-**Wazuh security monitoring manager running on NixOS via Docker.**
+> Host-based intrusion detection and security monitoring manager for the homelab security stack. Runs Wazuh Manager 4.14.3 on NixOS via Docker — fully declarative and version-controlled.
 
-Wazuh 4.14.3 manager declared as an OCI container in NixOS configuration. Receives security events from agents on all hosts, performs log analysis, file integrity monitoring, and rootkit detection, and forwards alerts to Elasticsearch on the ELK VM. Part of a broader security monitoring infrastructure — see [homelab-security-stack](https://github.com/impulseSecDev/homelab-security-stack) for full architecture.
+Part of the [Homelab Security Stack](../README.md).
 
 ---
 
-## What This VM Does
+## Overview
 
-- Runs Wazuh manager 4.14.3 for host-based intrusion detection across all hosts
-- Receives security events from agents on the daily driver, ELK VM, and VPS
-- Performs log analysis, FIM, rootkit detection, and vulnerability assessment
-- Forwards alerts to Elasticsearch on the ELK VM via internal Filebeat
-- Runs Fluent Bit to ship its own system logs to Elasticsearch over Tailscale
-- Connects to the VPS agent over a WireGuard tunnel
+The Wazuh VM is the HIDS core for the homelab. It receives security events from agents on all hosts, performs log analysis, file integrity monitoring, rootkit detection, and vulnerability assessment, and forwards alerts to Elasticsearch on the ELK VM via internal Filebeat.
+
+Wazuh Manager runs as a Docker container declared via `virtualisation.oci-containers` — managed by systemd, fully reproducible. All Wazuh state, configuration, logs, and alerts are persisted via volume mounts and survive container restarts.
 
 ---
 
@@ -23,21 +20,27 @@ Wazuh 4.14.3 manager declared as an OCI container in NixOS configuration. Receiv
 |---|---|---|
 | Wazuh Manager | 4.14.3 | Docker via `virtualisation.oci-containers` |
 | Fluent Bit | 4.x | Native NixOS module |
-| WireGuard | - | Native NixOS module |
+| Wazuh Agent | 4.14.3 | Monitors the VM itself |
+| WireGuard | — | Native NixOS module |
+| sops-nix | — | Encrypted secrets management |
 
 ---
 
 ## Agent Connections
 
-| Agent | Host | Connection Method |
+| Agent | Host | Connection |
 |---|---|---|
-| dailyDriver | NixOS daily driver | Tailscale |
-| elkVM | ELK VM | Tailscale |
-| headscalevps | Ubuntu VPS | WireGuard tunnel (10.10.10.3:1514) |
+| Daily Driver | NixOS workstation | Tailscale |
+| ELK VM | NixOS ELK VM | Tailscale |
+| Vaultwarden VM | NixOS Vaultwarden VM | Tailscale |
+| VPS | Ubuntu VPS | WireGuard wg0 |
+| Laptop | NixOS laptop | Tailscale |
 
 ---
 
-## Wazuh Ports
+## Network
+
+### Agent Ports
 
 | Port | Protocol | Purpose |
 |---|---|---|
@@ -45,64 +48,91 @@ Wazuh 4.14.3 manager declared as an OCI container in NixOS configuration. Receiv
 | 1515 | TCP | Agent enrollment |
 | 55000 | TCP | Wazuh API |
 
-Ports 1514, 1515, and 55000 are open on the WireGuard interface only for the VPS agent. Local agents connect over Tailscale which is trusted by the NixOS firewall without explicit rules.
+Ports 1514, 1515, and 55000 are open on the WireGuard interface for the VPS agent. All other agents connect over Tailscale which is trusted by the NixOS firewall without explicit rules.
 
----
+### WireGuard Tunnel
 
-## Modules
-
-| File | Purpose |
-|---|---|
-| `configuration.nix` | Wazuh manager container, Docker, base system config |
-| `wireguard.nix` | WireGuard client — outbound tunnel to VPS on port 62091 |
-| `fluent-bit.nix` | Fluent Bit — ships local systemd journal to ELK VM over Tailscale |
-| `wazuh-agent.nix` | Wazuh agent container template — used on NixOS agent hosts |
-
----
-
-## Secrets
-
-Secrets stored in `/etc/secrets/` — not committed to this repository.
-
-| File | Contents |
-|---|---|
-| `/etc/secrets/wazuh.env` | Elasticsearch indexer URL, credentials, API credentials |
-| `/etc/secrets/wazuh-authd.pass` | Agent enrollment password |
-| `/etc/secrets/elastic.env` | Fluent Bit Elasticsearch credentials |
-| `/etc/secrets/wg-wazuh-private` | WireGuard private key |
-| `/etc/secrets/wg-endpoint` | VPS public IP and WireGuard port |
-
----
-
-## WireGuard Tunnel
-
-This VM shares the same WireGuard interface on the VPS as the ELK VM, using a different peer IP on the same subnet.
+The Wazuh VM connects outbound to the VPS WireGuard hub — no inbound ports required on the home router.
 
 ```
-Wazuh VM (10.10.10.3) ──── WireGuard ──── VPS (10.10.10.1)
-          outbound connection, no inbound ports required
+Wazuh VM (wg0) ──── WireGuard ──── VPS hub
+                outbound only, no home port forwarding
 ```
 
-The VPS Wazuh agent connects back to this VM at `10.10.10.3:1514` for event shipping and `10.10.10.3:1515` for enrollment.
+Log shipping to the ELK VM also routes over WireGuard (`wg0`) — deliberately separated from Tailscale admin traffic.
+
+---
+
+## NixOS Module Structure
+
+```
+nixos/
+├── configuration.nix      # Entry point, imports all modules
+├── hardware-configuration.nix
+├── flake.nix
+├── wazuh.nix              # Wazuh manager oci-container, volumes, tmpfiles
+├── fluent-bit.nix         # Fluent Bit with sops template
+├── wireguard.nix          # wg0 log shipping + VPS connectivity
+├── sops.nix               # sops-nix configuration
+└── secrets/
+    └── secrets.yaml       # sops-encrypted secrets (safe to commit)
+```
 
 ---
 
 ## Persistent Data
 
-Wazuh state, configuration, logs, and alerts are stored on the host and mounted into the container:
+All Wazuh state is stored on the host and mounted into the container — data survives container restarts and image updates:
 
 ```
 /var/lib/wazuh/ossec/
-├── api/configuration/   # Wazuh API config
-├── etc/                 # ossec.conf, client.keys, authd.pass
-├── logs/                # ossec.log, alerts/alerts.json
-├── queue/               # Agent message queues
-├── var/multigroups/     # Agent group assignments
-├── integrations/        # Integration scripts
-├── active-response/bin/ # Active response scripts
-├── agentless/           # Agentless monitoring
-└── wodles/              # Wazuh modules
+├── etc/                     # ossec.conf, client.keys, authd.pass
+├── logs/                    # ossec.log, alerts/alerts.json
+├── api/configuration/       # Wazuh API config
+├── queue/                   # Agent message queues
+├── var/multigroups/         # Agent group assignments
+├── active-response/bin/     # Active response scripts
+├── integrations/            # Integration scripts
+├── agentless/               # Agentless monitoring
+└── wodles/                  # Wazuh modules
 ```
+
+---
+
+## Architecture
+
+### Alert Flow
+
+```
+All hosts (Wazuh agents)
+        │
+        ▼
+Wazuh Manager (this VM)
+        │  internal Filebeat
+        ▼
+Elasticsearch (ELK VM) ──── WireGuard wg0
+```
+
+### Log Shipping
+
+Fluent Bit ships the VM's own system logs to Elasticsearch over WireGuard, tagged separately from Wazuh alert data.
+
+---
+
+## Defense in Depth
+
+- Wazuh agent monitors the VM itself — FIM on config files, rootkit detection
+- Manager ports only open on WireGuard and Tailscale interfaces — not publicly exposed
+- All agent communication encrypted in transit via Tailscale or WireGuard
+- Alert forwarding to Elasticsearch over dedicated WireGuard log shipping channel
+- sops-nix encrypted secrets — no plaintext credentials in version control
+- Agent enrollment password enforced via `ossec.conf` `<use_password>yes</use_password>`
+
+---
+
+## Tech Stack
+
+`NixOS` `Wazuh` `Docker` `Fluent Bit` `WireGuard` `Tailscale` `sops-nix` `HIDS` `File integrity monitoring` `Rootkit detection` `Log aggregation` `Declarative infrastructure`
 
 ---
 
@@ -112,15 +142,32 @@ Wazuh state, configuration, logs, and alerts are stored on the host and mounted 
 
 **Problem:** `wazuh-authd` rejected all enrollment requests with `Invalid request for new agent` even after creating the `authd.pass` file.
 
-**Solution:** The `<auth>` section of `ossec.conf` must explicitly contain `<use_password>yes</use_password>`. Without this the manager ignores the password file entirely. The config was copied from the running container, modified, and persisted via the existing volume mount.
+**Solution:** The `<auth>` section of `ossec.conf` must explicitly contain `<use_password>yes</use_password>`. Without this the manager ignores the password file entirely. The config was copied from the running container, modified, and persisted via the existing volume mount on `/var/ossec/etc`.
 
-### VPS agent firewall blocking
+### VPS agent firewall blocking enrollment
 
-**Problem:** VPS Wazuh agent could not reach the enrollment service at `10.10.10.3:1515` despite the WireGuard tunnel being up.
+**Problem:** VPS Wazuh agent could not reach the enrollment service at port 1515 despite the WireGuard tunnel being up.
 
-**Solution:** Added explicit firewall rules for the WireGuard interface in NixOS configuration:
+**Solution:** Added explicit firewall rules for the WireGuard interface in NixOS configuration. Unlike Tailscale which is trusted by default, WireGuard requires explicit rules:
+
 ```nix
 networking.firewall.interfaces."wg0".allowedTCPPorts = [ 1514 1515 55000 ];
 ```
-Unlike Tailscale which is trusted by default, the WireGuard interface requires explicit firewall rules since NixOS treats it as an untrusted interface.
 
+### Agent re-enrollment delay after manager restart
+
+**Problem:** Disconnected agents waited up to an hour before being allowed to re-enroll due to the default `disconnected_time` threshold in `ossec.conf`.
+
+**Solution:** Added a `<force>` block to the `<auth>` section of `ossec.conf` to reduce the disconnected time threshold to 1 minute:
+
+```xml
+<auth>
+  <disabled>no</disabled>
+  <force>
+    <enabled>yes</enabled>
+    <key_mismatch>yes</key_mismatch>
+    <disconnected_time enabled="yes">1m</disconnected_time>
+    <after_registration_time>0</after_registration_time>
+  </force>
+</auth>
+```

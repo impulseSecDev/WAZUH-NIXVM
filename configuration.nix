@@ -1,6 +1,6 @@
-# Edit this configuration file to define what should be installed on
-# your system. Help is available in the configuration.nix(5) man page, on
-# https://search.nixos.org/options and in the NixOS manual (`nixos-help`).
+###############################################################################
+# Configuration.nix
+###############################################################################
 
 { config, lib, pkgs, ... }:
 
@@ -12,6 +12,22 @@
       ./fluent-bit.nix
       ./wazuh.nix
     ];
+
+  sops.secrets."user_password" = {
+    neededForUsers = true;
+  };
+
+  sops = {
+    defaultSopsFile = ./secrets/secrets.yaml;
+    age.keyFile = "/home/tim/.config/sops/age/keys.txt";
+  };
+
+  nix.settings = {
+    experimental-features = [
+      "nix-command"
+      "flakes"
+    ];
+  };
 
   # Use the systemd-boot EFI boot loader.
   boot.loader.systemd-boot.enable = true;
@@ -30,16 +46,20 @@
   # Define a user account. Don't forget to set a password with ‘passwd’.
   users.users.tim = {
     isNormalUser = true;
-    initialPassword = "password";
+    hashedPasswordFile = config.sops.secrets."user_password".path;
     extraGroups = [ "wheel" ]; # Enable ‘sudo’ for the user.
     packages = with pkgs; [
       btop
+      sops
+      tmux
+      vim
     ];
   };
   
   users.users.root.hashedPassword = "!";
 
   programs.neovim.enable = true;
+  programs.nano.enable = false;
   services.tailscale.enable = true;
 
   # List packages installed in system profile.
@@ -49,38 +69,32 @@
   #   wget
   # ];
 
-  # Some programs need SUID wrappers, can be configured further or are
-  # started in user sessions.
-  # programs.mtr.enable = true;
-  # programs.gnupg.agent = {
-  #   enable = true;
-  #   enableSSHSupport = true;
-  # };
-
   # List services that you want to enable:
 
-  services.openssh = {
-    enable = true;
-    settings = {
-      PasswordAuthentication = true;
-      PubkeyAuthentication = true;
-      #AllowUsers = [ "tim" ]; # Allows all users by default. Can be [ "user1" "user2" ]
-      UseDns = true;
-      X11Forwarding = false;
-      PermitRootLogin = "no"; # "yes", "without-password", "prohibit-password", "forced-commands-only", "no"
+  networking = {
+    interfaces.enp1s0 = {
+      ipv4.addresses = [{
+        address = "192.168.122.14";
+        prefixLength = 24;
+      }];
     };
+    defaultGateway = "192.168.122.1";
+    nameservers = [ "1.1.1.1" "8.8.8.8" ];
   };
 
-   networking = {
-     interfaces.enp1s0 = {
-       ipv4.addresses = [{
-         address = "192.168.122.14";
-         prefixLength = 24;
-       }];
-     };
-     defaultGateway = "192.168.122.1";
-     nameservers = [ "1.1.1.1" "8.8.8.8" ];
-   };
+  environment = {
+    shellAliases = {
+      sops-edit = "sudo SOPS_AGE_KEY_FILE=/home/tim/.config/sops/age/keys.txt sops";
+      vi = "nvim";
+      vim = "nvim";
+    };
+    variables = {
+      EDITOR = "nvim";
+      SUDO_EDITOR = "nvim";
+      VISUAL = "nvim";
+      SOPS_EDITOR = "vim";
+    };  
+  };
 
   # Open ports in the firewall.
   # networking.firewall.allowedTCPPorts = [ 22 ];
