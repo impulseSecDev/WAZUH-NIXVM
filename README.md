@@ -108,14 +108,14 @@ All hosts (Wazuh agents)
         │
         ▼
 Wazuh Manager (this VM)
-        │  internal Filebeat
+        │  internal Filebeat (Wazuh alerts only)
         ▼
 Elasticsearch (ELK VM) ──── WireGuard wg0
 ```
 
 ### Log Shipping
 
-Fluent Bit ships the VM's own system logs to Elasticsearch over WireGuard, tagged separately from Wazuh alert data.
+Fluent Bit runs natively on the Wazuh VM and ships system/journal logs to Elasticsearch over WireGuard — separate from Wazuh alert data which is handled by the internal Filebeat inside the Wazuh container.
 
 ---
 
