@@ -2,7 +2,7 @@
 
 > Host-based intrusion detection and security monitoring manager for the homelab security stack. Runs Wazuh Manager 4.14.3 on NixOS via Docker — fully declarative and version-controlled.
 
-Part of the [Homelab Security Stack](../README.md).
+Part of the [Homelab Security Stack](https://github.com/impulseSecDev/NIX-HOMELAB-SECURITY-STACK).
 
 ---
 
