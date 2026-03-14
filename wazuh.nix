@@ -1,37 +1,6 @@
 # ============================================================
 # wazuh.nix — Wazuh Manager Module for Wazuh VM (NixOS)
 # ============================================================
-# Architecture:
-#   Wazuh manager runs as a Docker container declared via
-#   virtualisation.oci-containers. Data directories are
-#   mounted from the host so they persist across container
-#   restarts and rebuilds.
-#
-#   Alerts are written to:
-#   /var/lib/wazuh/ossec/logs/alerts/alerts.json
-#
-#   Fluent Bit on this VM reads that file and ships alerts
-#   to Elasticsearch on the ELK VM over Tailscale.
-# ============================================================
-#
-# SETUP — run these commands before rebuilding:
-#
-#   sudo mkdir -p /var/lib/wazuh/ossec/{api/configuration,etc,logs,queue,var/multigroups,integrations,active-response/bin,agentless,wodles}
-#   sudo mkdir -p /var/lib/wazuh/filebeat/{etc,var}
-#   sudo touch /etc/secrets/wazuh.env
-#   sudo chmod 600 /etc/secrets/wazuh.env
-#
-# wazuh.env should contain:
-#   INDEXER_URL=http://elkwireguardip:9200
-#   INDEXER_USERNAME=username
-#   INDEXER_PASSWORD=yourpassword
-#
-# Agents connect to this manager on:
-#   - Port 1514 — agent communication (over Tailscale for local hosts)
-#   - Port 1515 — agent enrollment (over Tailscale for local hosts)
-#   - Port 55000 — Wazuh API
-#   VPS agent connects over WireGuard tunnel at 10.10.10.3
-# ============================================================
 
 { config, lib, pkgs, ... }:
 
