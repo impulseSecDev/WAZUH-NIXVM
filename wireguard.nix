@@ -67,13 +67,13 @@
       "wg0" = {
         allowedTCPPorts = [
           1514
-	        1515
-	        55000
+	  1515
+	  55000
         ];
       };
       "enp1s0" = {
         allowedUDPPorts = [
-	        62091
+	  62091
         ];
       };	
     };  
