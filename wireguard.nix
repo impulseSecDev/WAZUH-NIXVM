@@ -12,6 +12,7 @@
     "wg0_private_key" = {};
     "wg0_headscale_allowedips" = {};
     "wg0_elk_allowedips" = {};
+    "wg0_elk_endpoint" = {};
     "wg0_dailydriver_allowedips" = {};
     "wg0_vwvm_allowedips" = {};
     "wg0_laptop_allowedips" = {};
@@ -35,6 +36,7 @@
       # Elk VM
       PublicKey = wW4FLWFhZGOyzUnnf3cFTNlcmcXgc7E7S6LobwFF3Tc=
       AllowedIPs = ${config.sops.placeholder."wg0_elk_allowedips"}
+      Endpoint = ${config.sops.placeholder."wg0_elk_endpoint"}
 
       [Peer]
       # Daily Driver
