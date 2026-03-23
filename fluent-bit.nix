@@ -26,12 +26,39 @@
     end
   '';
 
+  environment.etc."fluent-bit/fail2ban-parse.lua".text = ''
+    function parse_fail2ban(tag, timestamp, record)
+      local msg = record["message"] or ""
+      local jail, action, ip = string.match(msg, "%[([^%]]+)%]%s+(%w+)%s+([%d%.]+)")
+      if jail then
+        record["jail"] = jail
+        record["action"] = action
+        record["src_ip"] = ip
+      end
+      local jail_only = string.match(msg, "%[([^%]]+)%]")
+      if jail_only and not jail then
+        record["jail"] = jail_only
+      end
+      return 1, timestamp, record
+    end
+  '';
+
+  environment.etc."fluent-bit/parsers.conf".text = ''
+    [PARSER]
+        Name        suricata-eve
+        Format      json
+        Time_Key    timestamp
+        Time_Format %Y-%m-%dT%H:%M:%S.%L%z
+        Time_Keep   On
+  '';
+
   sops.templates."fluent-bit.conf" = {
     content = ''
       [SERVICE]
           flush     1
           log_level info
           daemon    off
+	  Parsers_File /etc/fluent-bit/parsers.conf
 
       [INPUT]
           name systemd
@@ -41,6 +68,25 @@
           name tail
           path /var/log/*.log
           tag  nixos.tail
+
+      [INPUT]
+          name              tail
+          tag               wazuhvm.suricata.eve
+          path              /var/log/suricata/eve.json
+          db                /var/lib/fluent-bit/suricata-eve.db
+          mem_buf_limit     10MB
+          skip_long_lines   on
+          refresh_interval  5
+          parser            suricata-eve
+
+      [INPUT]
+          name              tail
+          tag               wazuhvm.suricata.fast
+          path              /var/log/suricata/fast.log
+          db                /var/lib/fluent-bit/suricata-fast.db
+          mem_buf_limit     5MB
+          skip_long_lines   on
+          refresh_interval  5
 
       [FILTER]
           name   modify
@@ -52,6 +98,12 @@
           match   *.journal
           script  /etc/fluent-bit/tailscale-parse.lua
           call    parse_tailscale
+
+      [FILTER]
+          name   lua
+          match  wazuhvm.fail2ban
+          script /etc/fluent-bit/fail2ban-parse.lua
+          call   parse_fail2ban
 
       [OUTPUT]
           name               es

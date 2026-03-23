@@ -11,6 +11,8 @@
       ./wireguard.nix
       ./fluent-bit.nix
       ./wazuh.nix
+      ./fail2ban.nix
+      ./suricata.nix
     ];
 
   sops.secrets."user_password" = {
@@ -55,7 +57,7 @@
       vim
     ];
   };
-  
+
   users.users.root.hashedPassword = "!";
 
   programs.neovim.enable = true;
@@ -64,10 +66,11 @@
 
   # List packages installed in system profile.
   # You can use https://search.nixos.org/ to find more packages (and options).
-  # environment.systemPackages = with pkgs; [
-  #   vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
-  #   wget
-  # ];
+  environment.systemPackages = with pkgs; [
+    vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
+    wget
+    suricata
+  ];
 
   # List services that you want to enable:
 
@@ -93,7 +96,7 @@
       SUDO_EDITOR = "nvim";
       VISUAL = "nvim";
       SOPS_EDITOR = "vim";
-    };  
+    };
   };
 
   # Open ports in the firewall.
@@ -127,4 +130,3 @@
   system.stateVersion = "25.11"; # Did you read the comment?
 
 }
-
