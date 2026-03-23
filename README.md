@@ -22,6 +22,8 @@ Wazuh Manager runs as a Docker container declared via `virtualisation.oci-contai
 | Fluent Bit | 4.x | Native NixOS module |
 | Wazuh Agent | 4.14.3 | Monitors the VM itself |
 | WireGuard | — | Native NixOS module |
+| Suricata | — | IDS/IPS in NFQ mode, EVE JSON alert logging |
+| fail2ban | — | Automated banning for SSH and Suricata alerts |
 | sops-nix | — | Encrypted secrets management |
 
 ---
@@ -73,6 +75,8 @@ nixos/
 ├── wazuh.nix              # Wazuh manager oci-container, volumes, tmpfiles
 ├── fluent-bit.nix         # Fluent Bit with sops template
 ├── wireguard.nix          # wg0 log shipping + VPS connectivity
+├── suricata.nix           # IDS/IPS with NFQ nftables hooks, daily rule updates
+├── fail2ban.nix           # Banning for SSH brute force and Suricata alerts
 ├── sops.nix               # sops-nix configuration
 └── secrets/
     └── secrets.yaml       # sops-encrypted secrets (safe to commit)
@@ -125,6 +129,8 @@ Fluent Bit runs natively on the Wazuh VM and ships system/journal logs to Elasti
 - Manager ports only open on WireGuard and Tailscale interfaces — not publicly exposed
 - All agent communication encrypted in transit via Tailscale or WireGuard
 - Alert forwarding to Elasticsearch over dedicated WireGuard log shipping channel
+- Suricata running in NFQ IPS mode — inspects all non-WireGuard/Tailscale traffic, rules updated daily
+- fail2ban bans on SSH brute force and Suricata alerts; Tailscale IPs whitelisted
 - sops-nix encrypted secrets — no plaintext credentials in version control
 - Agent enrollment password enforced via `ossec.conf` `<use_password>yes</use_password>`
 
@@ -132,7 +138,7 @@ Fluent Bit runs natively on the Wazuh VM and ships system/journal logs to Elasti
 
 ## Tech Stack
 
-`NixOS` `Wazuh` `Docker` `Fluent Bit` `WireGuard` `Tailscale` `sops-nix` `HIDS` `File integrity monitoring` `Rootkit detection` `Log aggregation` `Declarative infrastructure`
+`NixOS` `Wazuh` `Docker` `Fluent Bit` `WireGuard` `Tailscale` `Suricata` `fail2ban` `sops-nix` `HIDS` `File integrity monitoring` `Rootkit detection` `Log aggregation` `Declarative infrastructure`
 
 ---
 
