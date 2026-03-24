@@ -58,7 +58,7 @@
           flush     1
           log_level info
           daemon    off
-	  Parsers_File /etc/fluent-bit/parsers.conf
+          Parsers_File /etc/fluent-bit/parsers.conf
 
       [INPUT]
           name systemd
@@ -129,11 +129,10 @@
   };
 
   systemd.services.fluent-bit = {
-    serviceConfig.SupplementaryGroups = [ "adm" ];
+    serviceConfig = {
+      SupplementaryGroups = [ "adm" "suricata" ];
+      StateDirectory      = lib.mkForce "fluent-bit";
+      StateDirectoryMode  = "0750";
+    };
   };
-
-  # Prevents fluent-bit from resending logs on system restart or crash
-  systemd.tmpfiles.rules = [
-    "d /var/lib/fluent-bit 0750 fluent-bit fluent-bit -"
-  ];
 }
