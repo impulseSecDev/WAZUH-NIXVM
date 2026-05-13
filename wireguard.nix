@@ -1,5 +1,5 @@
 # ============================================================
-# wireguard.nix — WireGuard Module for Wazuh VM 
+# wireguard.nix — WireGuard Module for Wazuh VM
 # ============================================================
 
 { config, lib, pkgs, ... }:
@@ -16,6 +16,8 @@
     "wg0_dailydriver_allowedips" = {};
     "wg0_vwvm_allowedips" = {};
     "wg0_laptop_allowedips" = {};
+    "wg0_opnsense_allowedips" = {};
+    "wg0_opnsense_endpoint" = {};
   };
 
   sops.templates."wg0.conf" = {
@@ -49,6 +51,13 @@
       AllowedIPs = ${config.sops.placeholder."wg0_vwvm_allowedips"}
 
       [Peer]
+      # Opnsense
+      PublicKey = 7MacbDK83YxiNUGOBOsvPDxX4dKPFxGABJlzN9EVMiY=
+      AllowedIPs = ${config.sops.placeholder."wg0_opnsense_allowedips"}
+      Endpoint = ${config.sops.placeholder."wg0_opnsense_endpoint"}
+      PersistentKeepalive = 25
+
+      [Peer]
       # Laptop
       PublicKey = P+vWLcVRat/dq01yYksYeAvXtJgxo8j7C4GV05GV+0s=
       AllowedIPs = ${config.sops.placeholder."wg0_laptop_allowedips"}
@@ -78,7 +87,6 @@
 	  62091
         ];
       };	
-    };  
+    };
   };
 }
-
