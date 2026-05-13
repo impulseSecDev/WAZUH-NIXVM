@@ -205,7 +205,6 @@ unix-command:
     group = "suricata";
     mode = "0640";
     text = ''
-2026084
 re:modbus
 re:dnp3
     '';
