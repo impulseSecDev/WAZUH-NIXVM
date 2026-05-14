@@ -1,4 +1,4 @@
- confing, lib, pkgs, ... }:
+{ confing, lib, pkgs, ... }:
 {
 
   services.fail2ban = {
@@ -23,13 +23,5 @@
         };
       };
     };
-  };
-
-  environment.etc = {
-    "fail2ban/filter.d/vaultwarden.conf".text = ''
-      [Definition]
-      failregex = ^<HOST> - - \[.*\] "POST /identity/connect/token HTTP/\d\.\d" 4\d\d
-      ignoreregex =
-    '';
   };
 }
