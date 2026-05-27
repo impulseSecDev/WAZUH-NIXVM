@@ -18,6 +18,8 @@
     "wg0_laptop_allowedips" = {};
     "wg0_opnsense_allowedips" = {};
     "wg0_opnsense_endpoint" = {};
+    "wg0_cloud_allowedips" = {};
+    "wg0_cloud_hostname" = {};
   };
 
   sops.templates."wg0.conf" = {
@@ -62,6 +64,13 @@
       PublicKey = P+vWLcVRat/dq01yYksYeAvXtJgxo8j7C4GV05GV+0s=
       AllowedIPs = ${config.sops.placeholder."wg0_laptop_allowedips"}
       PersistentKeepalive = 25
+
+      [Peer]
+      #Cloud
+      PublicKey = E3UXGn7sIWOsTBCIsoLINjEiLf1bleLIocRfUZC69UM=
+      AllowedIPs = ${config.sops.placeholder."wg0_cloud_allowedips"}
+      PersistentKeepalive = 25
+      Endpoint = ${config.sops.placeholder."wg0_cloud_hostname"}
     '';
     path = "/run/secrets/wg0.conf";
     mode = "0400";
