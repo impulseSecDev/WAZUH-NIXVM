@@ -43,7 +43,7 @@
             enabled: false
     '';
     path = "/run/secrets/filebeat.yml";
-    mode = "0444"; # Filebeat enforces strict read-only permissions
+    mode = "0400"; # Filebeat enforces strict read-only permissions
   };
 
   virtualisation.docker.enable = true;
@@ -52,7 +52,7 @@
     backend = "docker";
     containers = {
       wazuh-manager = {
-        image = "wazuh/wazuh-manager:4.14.3";
+        image = "wazuh/wazuh-manager:4.14.7";
         environmentFiles = [ config.sops.templates."wazuh.env".path ];
 
         # Persistent volumes — data survives container restarts.
