@@ -23,6 +23,29 @@
     mode = "0444";
   };
 
+  sops.templates."filebeat.yml" = {
+    content = ''
+      output.elasticsearch:
+        hosts: ["${config.sops.placeholder."wazuh_indexer_url"}"]
+        username: "${config.sops.placeholder."wazuh_indexer_username"}"
+        password: "${config.sops.placeholder."wazuh_indexer_password"}"
+        ssl.verification_mode: "none"
+        index: "wazuh-alerts"
+
+      setup.template.enabled: false
+      setup.ilm.enabled: false
+
+      filebeat.modules:
+        - module: wazuh
+          alerts:
+            enabled: true
+          archives:
+            enabled: false
+    '';
+    path = "/run/secrets/filebeat.yml";
+    mode = "0444"; # Filebeat enforces strict read-only permissions
+  };
+
   virtualisation.docker.enable = true;
 
   virtualisation.oci-containers = {
@@ -44,6 +67,7 @@
           "/var/lib/wazuh/ossec/active-response/bin:/var/ossec/active-response/bin"
           "/var/lib/wazuh/ossec/agentless:/var/ossec/agentless"
           "/var/lib/wazuh/ossec/wodles:/var/ossec/wodles"
+          "${config.sops.templates."filebeat.yml".path}:/etc/filebeat/filebeat.yml:ro"
         ];
 
         extraOptions = [ "--network=host" ];
