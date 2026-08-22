@@ -113,7 +113,7 @@
           http_user          ${config.sops.placeholder."elastic_user"}
           http_passwd        ${config.sops.placeholder."elastic_password"}
           logstash_format    Off
-          Index wazuhvm
+          Index              wazuhvm
           suppress_type_name On
           buffer_size        10MB
     '';
