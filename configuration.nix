@@ -7,22 +7,22 @@
 {
   imports =
     [ # Include the results of the hardware scan.
-      ./hardware-configuration.nix
-      ./wireguard.nix
-      ./fluent-bit.nix
-      ./wazuh.nix
-      ./fail2ban.nix
-      ./suricata.nix
+      ./disko-config.nix
+      #./wireguard.nix
+      #./fluent-bit.nix
+      #./wazuh.nix
+      #./fail2ban.nix
+      #./suricata.nix
     ];
 
-  sops.secrets."user_password" = {
-    neededForUsers = true;
-  };
-
-  sops = {
-    defaultSopsFile = ./secrets/secrets.yaml;
-    age.keyFile = "/home/tim/.config/sops/age/keys.txt";
-  };
+  # sops.secrets."user_password" = {
+  #   neededForUsers = true;
+  # };
+  #
+  # sops = {
+  #   defaultSopsFile = ./secrets/secrets.yaml;
+  #   age.keyFile = "/home/tim/.config/sops/age/keys.txt";
+  # };
 
   nix.settings = {
     experimental-features = [
@@ -31,9 +31,21 @@
     ];
   };
 
-  # Use the systemd-boot EFI boot loader.
-  boot.loader.systemd-boot.enable = true;
+  boot.supportedFilesystems = lib.mkForce [ "vfat" "fat32" "exfat" "ext4" "btrfs" ];
+
+  boot.loader.systemd-boot.enable = lib.mkForce false;
   boot.loader.efi.canTouchEfiVariables = true;
+
+  boot.lanzaboote = {
+    enable = true;
+    pkiBundle = "/var/lib/sbctl";
+    autoGenerateKeys.enable = true;
+    autoEnrollKeys = {
+      enable = true;
+      # Automatically reboot to enroll the keys in the firmware
+      autoReboot = true;
+    };
+  };
 
   networking.hostName = "wazuh"; # Define your hostname.
 
@@ -66,30 +78,14 @@
   programs.nano.enable = false;
   services.tailscale.enable = true;
 
-  # List packages installed in system profile.
-  # You can use https://search.nixos.org/ to find more packages (and options).
   environment.systemPackages = with pkgs; [
-    vim # Do not forget to add an editor to edit configuration.nix! The Nano editor is also installed by default.
     wget
     suricata
   ];
 
-  # List services that you want to enable:
-
-  networking = {
-    interfaces.enp1s0 = {
-      ipv4.addresses = [{
-        address = "10.20.30.12";
-        prefixLength = 24;
-      }];
-    };
-    defaultGateway = "10.20.30.1";
-    nameservers = [ "1.1.1.1" "8.8.8.8" ];
-  };
-
   environment = {
     shellAliases = {
-      sops-edit = "sudo SOPS_AGE_KEY_FILE=/home/tim/.config/sops/age/keys.txt sops";
+      #sops-edit = "sudo SOPS_AGE_KEY_FILE=/home/tim/.config/sops/age/keys.txt sops";
       vi = "nvim";
       vim = "nvim";
     };
@@ -101,34 +97,6 @@
     };
   };
 
-  # Open ports in the firewall.
-  # networking.firewall.allowedTCPPorts = [ 22 ];
-  # networking.firewall.allowedUDPPorts = [ ... ];
-  # Or disable the firewall altogether.
-  # networking.firewall.enable = false;
-
-  # Copy the NixOS configuration file and link it from the resulting system
-  # (/run/current-system/configuration.nix). This is useful in case you
-  # accidentally delete configuration.nix.
-  # system.copySystemConfiguration = true;
-
-  # This option defines the first version of NixOS you have installed on this particular machine,
-  # and is used to maintain compatibility with application data (e.g. databases) created on older NixOS versions.
-  #
-  # Most users should NEVER change this value after the initial install, for any reason,
-  # even if you've upgraded your system to a new NixOS release.
-  #
-  # This value does NOT affect the Nixpkgs version your packages and OS are pulled from,
-  # so changing it will NOT upgrade your system - see https://nixos.org/manual/nixos/stable/#sec-upgrading for how
-  # to actually do that.
-  #
-  # This value being lower than the current NixOS release does NOT mean your system is
-  # out of date, out of support, or vulnerable.
-  #
-  # Do NOT change this value unless you have manually inspected all the changes it would make to your configuration,
-  # and migrated your data accordingly.
-  #
-  # For more information, see `man configuration.nix` or https://nixos.org/manual/nixos/stable/options#opt-system.stateVersion .
-  system.stateVersion = "25.11"; # Did you read the comment?
+  system.stateVersion = "26.05"; # Did you read the comment?
 
 }
