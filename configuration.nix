@@ -8,21 +8,26 @@
   imports =
     [ # Include the results of the hardware scan.
       ./disko-config.nix
-      #./wireguard.nix
-      #./fluent-bit.nix
-      #./wazuh.nix
-      #./fail2ban.nix
-      #./suricata.nix
+      ./wireguard.nix
+      ./fluent-bit.nix
+      ./wazuh.nix
+      ./fail2ban.nix
+      ./suricata.nix
     ];
 
-  # sops.secrets."user_password" = {
-  #   neededForUsers = true;
-  # };
-  #
-  # sops = {
-  #   defaultSopsFile = ./secrets/secrets.yaml;
-  #   age.keyFile = "/home/tim/.config/sops/age/keys.txt";
-  # };
+  sops.secrets."user_password" = {
+    neededForUsers = true;
+  };
+
+  sops = {
+    defaultSopsFile = ./secrets/secrets.yaml;
+    age.keyFile = "/var/lib/sops-nix/keys.txt";
+  };
+
+services.openssh = {
+  enable = false;
+  openFirewall = false;
+};
 
   nix.settings = {
     experimental-features = [
@@ -61,6 +66,7 @@
   users.users.tim = {
     isNormalUser = true;
     hashedPasswordFile = config.sops.secrets."user_password".path;
+    initialPassword = "password";
     extraGroups = [ "wheel" ]; # Enable ‘sudo’ for the user.
     packages = with pkgs; [
       btop
@@ -85,7 +91,7 @@
 
   environment = {
     shellAliases = {
-      #sops-edit = "sudo SOPS_AGE_KEY_FILE=/home/tim/.config/sops/age/keys.txt sops";
+      sops-edit = "sudo SOPS_AGE_KEY_FILE=/var/lib/sops-nix/keys.txt sops";
       vi = "nvim";
       vim = "nvim";
     };
