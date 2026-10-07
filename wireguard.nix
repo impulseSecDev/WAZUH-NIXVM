@@ -20,6 +20,7 @@
     "wg0_opnsense_endpoint" = {};
     "wg0_cloud_allowedips" = {};
     "wg0_cloud_hostname" = {};
+    "wg0_netbox_allowedips" = {};
   };
 
   sops.templates."wg0.conf" = {
@@ -72,6 +73,12 @@
       PersistentKeepalive = 25
       Endpoint = ${config.sops.placeholder."wg0_cloud_hostname"}
       PersistentKeepalive = 25
+
+      [Peer]
+      # Netbox
+      PublicKey = QsTAt8rB/QCjZLln9xmhN13Wfar5HYFGJIEuDdE4k1U=
+      AllowedIPs = ${config.sops.placeholder."wg0_netbox_allowedips"}
+      PersistentKeepalive = 2
     '';
     path = "/run/secrets/wg0.conf";
     mode = "0400";
@@ -88,13 +95,13 @@
       "wg0" = {
         allowedTCPPorts = [
           1514
-	  1515
-	  55000
+	        1515
+	        55000
         ];
       };
-      "enp1s0" = {
+      "enp2s0" = {
         allowedUDPPorts = [
-	  62091
+	        62091
         ];
       };	
     };

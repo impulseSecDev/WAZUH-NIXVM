@@ -10,6 +10,9 @@
     "wazuh_indexer_url" = {};
     "wazuh_indexer_username" = {};
     "wazuh_indexer_password" = {};
+    "wazuh_registration_password" = {
+      mode = "0400";
+    };
   };  
 
   sops.templates."wazuh.env" = {
@@ -34,6 +37,7 @@
 
       setup.template.enabled: false
       setup.ilm.enabled: false
+      seccomp.enabled: false
 
       filebeat.modules:
         - module: wazuh
@@ -68,8 +72,8 @@
           "/var/lib/wazuh/ossec/agentless:/var/ossec/agentless"
           "/var/lib/wazuh/ossec/wodles:/var/ossec/wodles"
           "${config.sops.templates."filebeat.yml".path}:/etc/filebeat/filebeat.yml:ro"
+          "${config.sops.secrets."wazuh_registration_password".path}:/var/ossec/etc/authd.pass:ro"
         ];
-
         extraOptions = [ "--network=host" ];
       };
     };
@@ -79,5 +83,13 @@
   systemd.tmpfiles.rules = [
     "d /var/lib/wazuh 0750 root root -"
   ];
+
+  systemd.services.docker-wazuh-manager.preStart = ''
+    conf=/var/lib/wazuh/ossec/etc/ossec.conf
+    if [ -f "$conf" ]; then
+      ${pkgs.gnused}/bin/sed -i \
+        's|<use_password>no</use_password>|<use_password>yes</use_password>|' "$conf"
+    fi
+  '';
 }
 

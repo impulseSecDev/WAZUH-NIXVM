@@ -66,7 +66,6 @@ services.openssh = {
   users.users.tim = {
     isNormalUser = true;
     hashedPasswordFile = config.sops.secrets."user_password".path;
-    initialPassword = "password";
     extraGroups = [ "wheel" ]; # Enable ‘sudo’ for the user.
     packages = with pkgs; [
       btop
