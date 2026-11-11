@@ -19,7 +19,6 @@
     "wg0_opnsense_allowedips" = {};
     "wg0_opnsense_endpoint" = {};
     "wg0_cloud_allowedips" = {};
-    "wg0_cloud_hostname" = {};
     "wg0_netbox_allowedips" = {};
     "wg0_sprint_allowedips" = {};
   };
@@ -72,7 +71,6 @@
       PublicKey = E3UXGn7sIWOsTBCIsoLINjEiLf1bleLIocRfUZC69UM=
       AllowedIPs = ${config.sops.placeholder."wg0_cloud_allowedips"}
       PersistentKeepalive = 25
-      Endpoint = ${config.sops.placeholder."wg0_cloud_hostname"}
       PersistentKeepalive = 25
 
       [Peer]
